@@ -1,6 +1,5 @@
 import { inngest } from './client'
 import { createClient as createBrowserClient } from '@supabase/supabase-js'
-import { getJson } from 'serpapi'
 
 // Create a Supabase client for background jobs (uses service role key)
 function createServiceClient() {
@@ -16,10 +15,15 @@ function createServiceClient() {
   )
 }
 
-interface LinkedInResult {
-  link?: string
-  title?: string
-  snippet?: string
+interface SerperOrganicResult {
+  link: string
+  title: string
+  snippet: string
+  position: number
+}
+
+interface SerperResponse {
+  organic: SerperOrganicResult[]
 }
 
 export const executeQuery = inngest.createFunction(
@@ -54,29 +58,38 @@ export const executeQuery = inngest.createFunction(
       return data
     })
 
-    // Step 2: Execute SerpAPI search with pagination
+    // Step 2: Execute Serper.dev search with pagination
     const profiles = await step.run('search-profiles', async () => {
       const resultsPerQuery = query.hunts.results_per_query || 500
       const profiles: any[] = []
-      const pagesNeeded = Math.ceil(resultsPerQuery / 10)
-      // Google typically limits to 100 pages (1000 results) max
-      const maxPages = Math.min(pagesNeeded, 100)
+      const pagesNeeded = Math.ceil(resultsPerQuery / 100) // Serper returns up to 100 results per request
+      const maxPages = Math.min(pagesNeeded, 10) // Limit to 10 pages (1000 results max)
 
       console.log(`Executing query ${queryId}: ${query.xray_query}`)
       console.log(`Fetching up to ${maxPages} pages (targeting ${resultsPerQuery} results)`)
 
       for (let page = 0; page < maxPages; page++) {
         try {
-          const params = {
-            engine: 'google',
-            q: query.xray_query,
-            api_key: process.env.SERPAPI_KEY,
-            num: 10,
-            start: page * 10,
+          // Make POST request to Serper.dev API
+          const response = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': process.env.SERPER_API_KEY!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              q: query.xray_query,
+              num: 100, // Request 100 results per page
+              page: page + 1, // Serper uses 1-based page numbers
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Serper API error: ${response.status} ${response.statusText}`)
           }
 
-          const response = await getJson(params)
-          const results: LinkedInResult[] = response.organic_results || []
+          const data: SerperResponse = await response.json()
+          const results = data.organic || []
 
           console.log(`  Page ${page + 1}: found ${results.length} results`)
 
@@ -87,7 +100,7 @@ export const executeQuery = inngest.createFunction(
           }
 
           for (const result of results) {
-            const url = result.link || ''
+            const url = result.link
 
             if (url.includes('linkedin.com/in/')) {
               profiles.push({
@@ -109,8 +122,8 @@ export const executeQuery = inngest.createFunction(
             break
           }
 
-          // Rate limiting to avoid overwhelming SerpAPI
-          await new Promise(resolve => setTimeout(resolve, 500))
+          // Rate limiting to avoid overwhelming Serper.dev
+          await new Promise(resolve => setTimeout(resolve, 1000))
         } catch (pageError: any) {
           console.error(`Error fetching page ${page + 1}:`, pageError.message)
           // Continue to next page on error

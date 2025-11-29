@@ -82,8 +82,9 @@ SUPABASE_SECRET_KEY=sb_secret_...your_key
 # OpenAI
 OPENAI_API_KEY=sk-proj-...your_openai_key
 
-# SerpAPI
-SERPAPI_KEY=...your_serpapi_key
+# Serper.dev (Google Search API - 2500 free searches)
+# Get your API key at: https://serper.dev/
+SERPER_API_KEY=...your_serper_api_key
 ```
 
 Replace with your actual keys!
