@@ -52,15 +52,19 @@ You need 3 values:
    https://xxxxxxxxxxxxx.supabase.co
    ```
 
-2. **Anon (public) Key** - Click "Reveal" and copy
+2. **Publishable Key** - Click "Reveal" and copy (modern API key, safe for frontend)
    ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   sb_publishable_...
    ```
 
-3. **Service Role Key** - Click "Reveal" and copy (⚠️ Keep secret!)
+   *Note: You may also see "Anon (public) Key" starting with `eyJ` - this is the legacy format. The new `sb_publishable_` format is recommended.*
+
+3. **Secret Key** - Click "Reveal" and copy (⚠️ Keep secret! Backend only!)
    ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   sb_secret_...
    ```
+
+   *Note: You may also see "Service Role Key" starting with `eyJ` - this is the legacy format. The new `sb_secret_` format is recommended.*
 
 ---
 
@@ -70,10 +74,10 @@ You need 3 values:
 In the project root, create `.env.local`:
 
 ```bash
-# Supabase
+# Supabase (Modern Keys - 2025)
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...your_service_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...your_key
+SUPABASE_SECRET_KEY=sb_secret_...your_key
 
 # OpenAI
 OPENAI_API_KEY=sk-proj-...your_openai_key
@@ -83,6 +87,12 @@ SERPAPI_KEY=...your_serpapi_key
 ```
 
 Replace with your actual keys!
+
+**Note:** If you have legacy keys (starting with `eyJ`), use these variable names instead:
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (instead of PUBLISHABLE_KEY)
+- `SUPABASE_SERVICE_ROLE_KEY` (instead of SECRET_KEY)
+
+Both formats are supported by the setup script.
 
 ---
 
